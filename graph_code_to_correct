@@ -1,0 +1,52 @@
+library(ggplot2)
+library(reshape2)
+
+data <- read.delim(textConnection("
+Sample Day_0 Day_1 Day_4 Day_5 Day_7
+NM 1000 221000 6620000 17200000 43700000
+OG 1000 351000 1750000 6880000 18300000
+OD 1000 961000 1090000 6380000 4400000
+ODD 1000 1060000 3550000 12000000 13100000"), sep = " ")
+
+data_melt <- melt(data, id.var = "variable")
+data_melt <- mutate(data_melt, upper =  quantile(value, 0.75), lower = quantile(value, 0.25), mean = mean(value))
+
+
+data_melt <- melt(data, id.var = "Sample")
+data_melt$value <- as.numeric(data_melt$value)
+
+
+
+data_melt <- melt(data, id.var = "Sample")
+library(dplyr)    
+data_melt <- data_melt %>% group_by(variable) %>% mutate(upper =  quantile(value, 0.75), 
+                                                         lower = quantile(value, 0.25),
+                                                         mean = mean(value))
+
+
+
+ggplot(data=data_melt, aes(x=variable, y=value, color = Sample)) + geom_point(size = 2.5) + scale_y_continuous(trans=log2_trans(), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x))) + 
+  ggtitle("My_Title") + xlab("My_X") + ylab("My_Axis") + theme(plot.title = element_text(hjust = 0.5)) + expand_limits(y = c(10^3, 10^8)) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper),col = "red", width =  0.25) + geom_point(aes(x = variable, y = mean), size = 3, col = "red")
+
+###############################################################
+
+bact <- read.csv("bacteria_days.csv", sep = ";", dec = ".", header = T)
+bact$Sample <- as.character(bact$Sample)
+bact_stat <- rbind(bact, c("Mean", colMeans(bact[,-1])))
+bact_stat <- rbind(bact_stat, c("SD", apply(X = bact[,-1], 2,sd)))
+
+bact_melt <- melt(bact, id.var = "Sample")
+bact_melt$value <- as.numeric(bact_melt$value)
+
+ggplot(data=bact_melt, aes(x=variable, y=value, color = Sample)) + geom_point(size = 2.5) + scale_y_continuous(trans=log2_trans(), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x))) + 
+  ggtitle("Evolution of the quantity of Phage in feces") + xlab("Time") + ylab("Phage (PFU/g of feces)") + theme(plot.title = element_text(hjust = 0.5)) + expand_limits(y = c(10^3, 10^8))
+  
+ggplot(data=bact_melt, aes(x=variable, y=value, color = Sample)) + geom_point(size = 2.5) + scale_y_continuous(trans=log2_trans(), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x))) + 
+  ggtitle("My_Title") + xlab("My_X") + ylab("My_Axis") + theme(plot.title = element_text(hjust = 0.5)) + expand_limits(y = c(10^3, 10^8))
+
+
+
+ggplot(data=bact_melt, aes(x=variable, y=value, fill = Sample)) + geom_dotplot(binaxis = "y", stackdir = "center", binwidth = 0.4) + scale_y_continuous(trans=log2_trans(), breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x))) + 
+  ggtitle("Evolution of the quantity of Phage in feces") + xlab("Time") + ylab("Phage (PFU/g of feces)") + theme(plot.title = element_text(hjust = 0.5)) + expand_limits(y = c(10^3, 10^8))
+  + stat_summary(fun.data=mean_sdl, geom="errorbar", color="red", width=0.2) + stat_summary(fun.y=mean, geom="point", color="red")
